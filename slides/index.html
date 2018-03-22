@@ -64,7 +64,7 @@ URL: https://code.google.com/p/io-2012-slides
   <hgroup class="auto-fadein">
 
     <h1> SSH for fun and profit</h1>
-    <h2> or just getting sh*t done </h2>
+    <h2> or how I learned to love the shell</h2>
     <p> Steven Hollingsworth<br/> Lead SRE - Barracuda Networks</p>
   </hgroup>
 </slide>
@@ -76,29 +76,14 @@ URL: https://code.google.com/p/io-2012-slides
       <h2>Welcome!</h2>
       <h3>Here is what we'll cover...</h3>
     </hgroup>
-    <article ><ul>
+    <article ><ul class="build">
 <li>background / history</li>
 <li>running/configuring a secure sshd instance</li>
 <li>ssh keys: and why you should use these whenever possible</li>
 <li>ssh agent</li>
 <li>common uses:  <code>ssh, rsync, scp</code></li>
-<li>dymanic port forwarding: <code>socks5a proxy</code></li>
-<li>local port fowarding </li>
-<li>remote port forwarding</li>
-</ul></article>
- 
-</slide>
-
-<slide  >
-  
-    <hgroup>
-      <h2>Welcome! - continue</h2>
-      <h3>we may also cover if we have time...</h3>
-    </hgroup>
-    <article ><ul>
+<li>all things port forwarding</li>
 <li>tips and tricks</li>
-<li>volunteers for demoing using ssh on a windows box?</li>
-<li>ssh vpn tunnel?</li>
 </ul></article>
  
 </slide>
@@ -110,10 +95,10 @@ URL: https://code.google.com/p/io-2012-slides
       <h3></h3>
     </hgroup>
     <article ><ul>
-<li>overview - <a href="https://en.wikipedia.org/wiki/Secure_Shell">Wikipedia</a></li>
-<li>ssh-1 - 1995 - <a href="https://en.wikipedia.org/wiki/SSH_Communications_Security">SSH Communications Security</a> initial release</li>
-<li>ssh-2 - 2006 - IETF made a new RFC <a href="https://tools.ietf.org/html/rfc4253">4253</a> for cross compatibility with ssh-1</li>
-<li>OpenSSH - 1999 - The OpenBSD team made an <a href="https://en.wikipedia.org/wiki/OpenSSH">OpenSSH</a> - current stable is v7.6</li>
+<li>overview / <a href="https://en.wikipedia.org/wiki/Secure_Shell">Wikipedia</a></li>
+<li>ssh-1 - 1995 / <a href="https://en.wikipedia.org/wiki/SSH_Communications_Security">SSH Communications Security</a> initial release</li>
+<li>ssh-2 - 2006 / IETF made a new RFC <a href="https://tools.ietf.org/html/rfc4253">4253</a> for cross compatibility with ssh-1</li>
+<li>OpenSSH - 1999 / The OpenBSD team made an <a href="https://en.wikipedia.org/wiki/OpenSSH">OpenSSH</a> - current stable is v7.6</li>
 </ul>
 <p>We'll be using OpenSSH exclusively in this demo as that's the standard for most OS's you'll see in the wild.</p></article>
  
@@ -122,20 +107,679 @@ URL: https://code.google.com/p/io-2012-slides
 <slide class="img-top-center" >
   
     <hgroup>
-      <h2>securing sshd</h2>
-      <h3>prerequisites</h3>
+      <h2>Interactive playground</h2>
+      <h3>don't be a jerk :-P</h3>
     </hgroup>
-    <article ></article>
+    <article ><ul>
+<li>As we go through the slide deck, feel free to poke at a server I've put into the rootaccess slack channel <code>#linux</code></li>
+<li>to add new users on server I'll give you sudo, and use<ul>
+<li><code>/usr/local/bin/add_user_key.sh</code></li>
+</ul>
+</li>
+<li>If you want a shell to test with paste your <code>public</code> key (we'll go over that shortly) into the chat window with your desired username and someone will set it up!</li>
+</ul></article>
+ 
+</slide>
+
+<slide class="segue dark nobackground" >
+  
+    <!-- <aside class="gdbar"><img src="images/google_developers_icon_128.png"></aside> -->
+    <hgroup class="auto-fadein">
+      <h2>Securing SSH Server (sshd)</h2>
+      <h3>important if you are exposing sshd to the interwebs</h3>
+    </hgroup>
+  
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>prerequisites</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><h1>Installation</h1>
+<ul>
+<li>Ubuntu/Linux - Usually Default installed <ul>
+<li><code>apt get install openssh</code></li>
+</ul>
+</li>
+<li>Windows <ul>
+<li><a href="https://www.putty.org/">Putty</a></li>
+<li>? something better</li>
+</ul>
+</li>
+<li>Mac - Default Installed</li>
+</ul></article>
  
 </slide>
 
 <slide class="img-top-center" >
   
     <hgroup>
-      <h2>securing sshd</h2>
-      <h3>/etc/ssh/sshd_config</h3>
+      <h2>/etc/ssh/sshd_config</h2>
+      <h3></h3>
     </hgroup>
-    <article ><p><em><em>important if you are exposing sshd to the interwebs</em></em></p></article>
+    <article ><ul>
+<li>Example config: <a href="https://raw.githubusercontent.com/shollingsworth/ssh_is_cool/master/sshd_config_example.txt">sshd_config</a>
+<pre class="prettyprint" data-lang="/etc/ssh/sshd_config">
+Port 22
+Protocol 2
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+<b>AllowGroups allow_ssh</b>
+UsePrivilegeSeparation yes
+<b>PasswordAuthentication no</b>
+ChallengeResponseAuthentication no
+KeyRegenerationInterval 3600
+ServerKeyBits 2048
+SyslogFacility AUTH
+LogLevel INFO
+LoginGraceTime 120
+<b>PermitRootLogin no</b>
+<b>StrictModes yes</b>
+RSAAuthentication yes
+... (cont)
+</pre></li>
+</ul></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>/etc/ssh/sshd_config (cont.)</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><pre class="prettyprint" data-lang="/etc/ssh/sshd_config">
+<b>PubkeyAuthentication yes</b>
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-ripemd160-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,hmac-ripemd160,umac-128@openssh.com
+IgnoreRhosts yes
+RhostsRSAAuthentication no
+HostbasedAuthentication no
+<b>PermitEmptyPasswords no</b>
+X11Forwarding yes
+X11DisplayOffset 10
+PrintMotd no
+PrintLastLog yes
+TCPKeepAlive yes
+AcceptEnv LANG LC_*
+Subsystem sftp /usr/lib/openssh/sftp-server
+UsePAM yes
+KexAlgorithms curve25519-sha256@libssh.org,diffie-hellman-group-exchange-sha256
+</pre></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>gotchas / applying changes</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>be careful you can lock yourself out<ul>
+<li>especially if you're using HaaS like AWS which has no actual console</li>
+<li>usually if you already have a session open, you can test with another shell</li>
+</ul>
+</li>
+<li>after editing, issue the command <code>/etc/init.d/sshd</code><ul>
+<li>you can do this without fear of the shell dropping (unless something is really wonky and sshd segfaults)</li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2></h2>
+      <h3></h3>
+    </hgroup>
+    <article ><h2>DEMO - sshd changes</h2>
+<p><br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<img height=300 src=./figures/peanut_butter_jelly.gif /></p></article>
+ 
+</slide>
+
+<slide class="segue dark nobackground" >
+  
+    <!-- <aside class="gdbar"><img src="images/google_developers_icon_128.png"></aside> -->
+    <hgroup class="auto-fadein">
+      <h2>ssh keys</h2>
+      <h3>a.k.a passwords suck, use keys instead</h3>
+    </hgroup>
+  
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>key exchange overview</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><p><img height=360 src=figures/key_based_2.png /></p>
+<footer class="source">
+<b>Source:</b>https://www.vmcentral.com.au/how-to-configure-ssh-to-accept-only-key-based-authentication/
+</footer></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>generating your first ssh key</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>Interactive<ul>
+<li><code>ssh-keygen</code></li>
+</ul>
+</li>
+<li>more specific<ul>
+<li><code>ssh-keygen -b 2048 -t ed25519 -f ~/.ssh/testing</code></li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>generating your first ssh key (cont.)</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><pre class="prettyprint" data-lang="sample output">
+ssh-keygen -b 2048 -t ed25519 -f ~/.ssh/testing
+...
+Generating public/private ed25519 key pair.
+Enter passphrase (empty for no passphrase): 
+Enter same passphrase again: 
+<b>
+Your identification has been saved in /home/shollingsworth/.ssh/testing.
+Your public key has been saved in /home/shollingsworth/.ssh/testing.pub.
+</b>
+The key fingerprint is:
+SHA256:tS22gJLKRyjGb0ubdzmX/vgM8brnhKJjjHVpJ4yTatA shollingsworth@shollingsworth-lnx
+The key's randomart image is:
++--[ED25519 256]--+
+|                 |
+|                 |
+|          .      |
+|.  . . . . o     |
+|.oo + = S.+ .    |
+|.+.E * * ++o     |
+|  ++* +.+ooo     |
+|  o=+=.+.o*.     |
+|  .+o.o +=*=     |
++----[SHA256]-----+
+</pre></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>a note on passphrases</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>Passphrases are important, especially if it's your main SSH key.</li>
+<li>Make sure it's a passphrase (i.e. <em><em>&gt;12 characters</em></em>) <ul>
+<li>"<code>Grandma 2 Likes #! Gremlins 55</code>"</li>
+<li>We can talk more about what makes a good password if we have time at the end</li>
+</ul>
+</li>
+<li>Sometimes having a non-passphrased key is useful as well, such as using a key to run backup jobs via <code>rsync</code></li>
+</ul></article>
+ 
+</slide>
+
+<slide class="segue dark nobackground" >
+  
+    <!-- <aside class="gdbar"><img src="images/google_developers_icon_128.png"></aside> -->
+    <hgroup class="auto-fadein">
+      <h2>ssh agent</h2>
+      <h3>or not going insane by typing in my passphrase a gazillion times</h3>
+    </hgroup>
+  
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>starting the agent</h2>
+      <h3>simple example</h3>
+    </hgroup>
+    <article ><h3>note - <em>you'll have to run this once, see next page for bashrc example</em></h3>
+<p><br></p>
+<pre class="prettyprint" data-lang="~/.bashrc snippet">
+export SSH_AUTH_SOCK="${HOME}/.ssh/SSH_AGENT_SOCK"
+rm -f ${SSH_AUTH_SOCK}
+ssh-agent -a ${SSH_AUTH_SOCK}
+</pre></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>starting the agent</h2>
+      <h3>more complex example in ~/.bashrc</h3>
+    </hgroup>
+    <article ><pre class="prettyprint" data-lang="~/.bashrc snippet">
+sshkeys=()
+<b>sshkeys+=(~/.ssh/testing)</b>
+sshkeys+=(~/.ssh/key1.pem)
+sshkeys+=(~/.ssh/key2.pem)
+
+export SSH_AUTH_SOCK="${HOME}/.ssh/SSH_AGENT_SOCK"
+<b>if ! ssh-add -l | grep -q testing; then</b>
+   rm -f ${SSH_AUTH_SOCK}
+   ssh-agent -a ${SSH_AUTH_SOCK}
+   sleep 1
+   for i in ${sshkeys[@]}; do
+    <b>ssh-add ${i}</b>
+   done
+fi
+</pre></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>gotchas / tips</h2>
+      <h3>more complex example in ~/.bashrc</h3>
+    </hgroup>
+    <article ><ul>
+<li>see what keys are loaded: <code>ssh-add -l</code></li>
+<li>kill all your keys: <code>ssh-add -D</code></li>
+</ul>
+<p>Gotchas:</p>
+<ul>
+<li>there's a known limitation to the number of keys you can stuff via <code>ssh-add</code></li>
+</ul></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2></h2>
+      <h3></h3>
+    </hgroup>
+    <article ><h2>DEMO - ssh-agent</h2>
+<p><br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<img height=300 src=./figures/peanut_butter_jelly.gif /></p></article>
+ 
+</slide>
+
+<slide class="segue dark nobackground" >
+  
+    <!-- <aside class="gdbar"><img src="images/google_developers_icon_128.png"></aside> -->
+    <hgroup class="auto-fadein">
+      <h2>~/.ssh/config</h2>
+      <h3>or how to sanely manage hosts I connect to regularly</h3>
+    </hgroup>
+  
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>~/.ssh/config</h2>
+      <h3>global settings</h3>
+    </hgroup>
+    <article ><pre class="prettyprint" data-lang="~/.ssh/config">
+Host *
+    CheckHostIP yes
+    User shollingsworth
+    <b>IdentityFile ~/.ssh/testing</b>
+    IdentitiesOnly yes
+</pre></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>~/.ssh/config</h2>
+      <h3>wildcard grouping a trusted server set</h3>
+    </hgroup>
+    <article ><pre class="prettyprint" data-lang="~/.ssh/config">
+Host *.trusted.com
+    ForwardAgent yes
+</pre></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>~/.ssh/config</h2>
+      <h3>host specific setting / shortcut</h3>
+    </hgroup>
+    <article ><pre class="prettyprint" data-lang="~/.ssh/config">
+Host demo
+    HostName 54.219.154.10
+    User ubuntu
+    <b>DynamicForward 9999
+    LocalForward 7777 127.0.0.1:9200</b>
+</pre></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2></h2>
+      <h3></h3>
+    </hgroup>
+    <article ><h2>DEMO</h2>
+<h1>using ~/.ssh/config</h1>
+<p><br>
+<br>
+<br>
+<br>
+<br>
+<img height=300 src=./figures/peanut_butter_jelly.gif /></p></article>
+ 
+</slide>
+
+<slide class="segue dark nobackground" >
+  
+    <!-- <aside class="gdbar"><img src="images/google_developers_icon_128.png"></aside> -->
+    <hgroup class="auto-fadein">
+      <h2>common SSH uses</h2>
+      <h3>there are many</h3>
+    </hgroup>
+  
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>ssh</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>normal shell<ul>
+<li><code>ssh user@remote.host.com</code> </li>
+</ul>
+</li>
+<li>executing a command non interactively<ul>
+<li><code>ssh user@remote.host.com "hostname"</code></li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>rsync / scp</h2>
+      <h3>beware of the forward slash on source</h3>
+    </hgroup>
+    <article ><ul>
+<li>copy from local to remote<ul>
+<li><code>rsync -av slides demo:~/</code></li>
+<li><code>scp -r slides demo:~/</code></li>
+</ul>
+</li>
+<li>copy from remote to local<ul>
+<li><code>rsync demo:~/slides -av /tmp</code></li>
+<li><code>scp -r demo:~/slides /tmp</code></li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>other uses</h2>
+      <h3>but wait... there's more!</h3>
+    </hgroup>
+    <article ><ul>
+<li>tar over ssh (emergency backup)<ul>
+<li><code>tar -cjf - slides | ssh demo "cat - &gt; ~/slides.tbz"</code></li>
+</ul>
+</li>
+<li>I've also uses it with a ddrescue variant to pipe an image to a remote server for forensic recovery using the same type of method</li>
+</ul></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2></h2>
+      <h3></h3>
+    </hgroup>
+    <article ><h2>DEMO - ssh commands</h2>
+<p><br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<img height=300 src=./figures/peanut_butter_jelly.gif /></p></article>
+ 
+</slide>
+
+<slide class="segue dark nobackground" >
+  
+    <!-- <aside class="gdbar"><img src="images/google_developers_icon_128.png"></aside> -->
+    <hgroup class="auto-fadein">
+      <h2>local/remote/dynamic port forwarding</h2>
+      <h3>one of the coolest features of ssh</h3>
+    </hgroup>
+  
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>local port forwarding</h2>
+      <h3>i drink your milkshake</h3>
+    </hgroup>
+    <article ><h1>forward remote mysql connection to local</h1>
+<ul>
+<li>via ssh <ul>
+<li><code>ssh -L 127.0.0.1:7777:127.0.0.1:3306 demo</code></li>
+</ul>
+</li>
+<li>via ~/.ssh/config<ul>
+<li><code>LocalForward 7777 127.0.0.1:3306</code></li>
+</ul>
+</li>
+<li>PoC<ul>
+<li><code>mysql --host=127.0.0.1 -P 7777 --user=root -p</code></li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2></h2>
+      <h3></h3>
+    </hgroup>
+    <article ><h2>DEMO - local port forwarding</h2>
+<p><br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<img height=300 src=./figures/peanut_butter_jelly.gif /></p></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>remote port forwarding</h2>
+      <h3>you drink my milkshake (I guess)</h3>
+    </hgroup>
+    <article ><h1>setup a local webserver on 8000, access via remote</h1>
+<ul>
+<li>setup local listener <ul>
+<li>don't run this inside a directory you care about! </li>
+<li><code>python -m SimpleHTTPServer 8000</code></li>
+</ul>
+</li>
+<li>via ssh <ul>
+<li><code>ssh -R 7777:127.0.0.1:8000 demo</code></li>
+</ul>
+</li>
+<li>via ~/.ssh/config<ul>
+<li><code>RemoteForward 7777 127.0.0.1:8000</code></li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>remote port forwarding (cont.)</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>PoC (on remote)<ul>
+<li><code>curl localhost:7777</code></li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2></h2>
+      <h3></h3>
+    </hgroup>
+    <article ><h2>DEMO - remote port forwarding</h2>
+<p><br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<img height=300 src=./figures/peanut_butter_jelly.gif /></p></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>dynamic port forwarding</h2>
+      <h3>stealing a servers identity (or ip address)</h3>
+    </hgroup>
+    <article ><ul>
+<li>via ssh <ul>
+<li><code>ssh -D 7777 demo</code></li>
+</ul>
+</li>
+<li>via ~/.ssh/config<ul>
+<li><code>DynamicForward 7777</code></li>
+</ul>
+</li>
+<li>PoC<ul>
+<li>Demo  with firefox and adding a socks5a proxy to <code>127.0.0.1:7777</code></li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2></h2>
+      <h3></h3>
+    </hgroup>
+    <article ><h2>DEMO - dynamic port fowarding</h2>
+<p><br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<img height=300 src=./figures/peanut_butter_jelly.gif /></p></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>forwarding on already connected ssh session</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>magic key sequence is <code>~C</code> (tilde then capital c)</li>
+</ul>
+<pre class="prettyprint" data-lang="~C demo">
+ubuntu@ip-172-31-10-5:~$ 
+ssh> -L 7777:127.0.0.1:3306
+</pre></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2></h2>
+      <h3></h3>
+    </hgroup>
+    <article ><h2>DEMO "~C" ssh command</h2>
+<p><br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<img height=300 src=./figures/peanut_butter_jelly.gif /></p></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>Questions and other stuff</h2>
+      <h3>feel free to speak up!</h3>
+    </hgroup>
+    <article ><ul>
+<li>volunteers for demoing using ssh on a windows box?</li>
+<li>ssh vpn tunnel?</li>
+</ul>
+<p>Misc:</p>
+<ul>
+<li>created with <a href="https://github.com/rmcgibbo/slidedeck">slidedeck</a></li>
+<li>this github repo <a href="https://github.com/shollingsworth/ssh_is_cool">shollingsworth/ssh_is_cool</a></li>
+</ul></article>
  
 </slide>
 

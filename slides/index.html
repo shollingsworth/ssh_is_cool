@@ -1,0 +1,174 @@
+<!--
+slidedeck: A modification of the Google IO 2012 HTML5 slide template
+URL: https://github.com/rmcgibbo/slidedeck
+
+Based on https://github.com/francescolaffi/elastic-google-io-slides, and
+ultimately:
+
+Google IO 2012 HTML5 Slide Template
+Authors: Eric Bidelman <ebidel@gmail.com>
+         Luke Mahe <lukem@google.com>
+URL: https://code.google.com/p/io-2012-slides
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <title> SSH for fun and profit</title>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <!--<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">-->
+  <!--<meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+  <!--This one seems to work all the time, but really small on ipad-->
+  <!--<meta name="viewport" content="initial-scale=0.4">-->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+   <link rel="shortcut icon" href=" figures/favicon.ico"/> 
+  <link rel="stylesheet" media="all" href="theme/css/default.css">
+  <link rel="stylesheet" media="all" href="theme/css/custom.css">
+  <link rel="stylesheet" media="only screen and (max-device-width: 480px)" href="theme/css/phone.css">
+  <base target="_blank"> <!-- This amazingness opens all links in a new tab. -->
+  <script data-main="js/slides", src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js"></script>
+
+
+  <!-- MathJax support  -->
+  <script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX", "output/HTML-CSS"],
+    showProcessingMessages: false,
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+      processEscapes: true
+    },
+    TeX: {
+      extensions: ["color.js"]
+    },
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+  </script>
+  <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  <div style="display:hidden">
+  \[
+    \definecolor{data}{RGB}{18,110,213}
+    \definecolor{unknown}{RGB}{217,86,16}
+    \definecolor{learned}{RGB}{175,114,176}
+  \]
+  </div>
+
+</head>
+
+<body style="opacity: 0">
+
+<slides class="layout-widescreen">
+<slide class="title-slide segue nobackground">
+  <hgroup class="auto-fadein">
+
+    <h1> SSH for fun and profit</h1>
+    <h2> or just getting sh*t done </h2>
+    <p> Steven Hollingsworth<br/> Lead SRE - Barracuda Networks</p>
+  </hgroup>
+</slide>
+
+
+<slide  >
+  
+    <hgroup>
+      <h2>Welcome!</h2>
+      <h3>Here is what we'll cover...</h3>
+    </hgroup>
+    <article ><ul>
+<li>background / history</li>
+<li>running/configuring a secure sshd instance</li>
+<li>ssh keys: and why you should use these whenever possible</li>
+<li>ssh agent</li>
+<li>common uses:  <code>ssh, rsync, scp</code></li>
+<li>dymanic port forwarding: <code>socks5a proxy</code></li>
+<li>local port fowarding </li>
+<li>remote port forwarding</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Welcome! - continue</h2>
+      <h3>we may also cover if we have time...</h3>
+    </hgroup>
+    <article ><ul>
+<li>tips and tricks</li>
+<li>volunteers for demoing using ssh on a windows box?</li>
+<li>ssh vpn tunnel?</li>
+</ul></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>sshd Background and History</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>overview - <a href="https://en.wikipedia.org/wiki/Secure_Shell">Wikipedia</a></li>
+<li>ssh-1 - 1995 - <a href="https://en.wikipedia.org/wiki/SSH_Communications_Security">SSH Communications Security</a> initial release</li>
+<li>ssh-2 - 2006 - IETF made a new RFC <a href="https://tools.ietf.org/html/rfc4253">4253</a> for cross compatibility with ssh-1</li>
+<li>OpenSSH - 1999 - The OpenBSD team made an <a href="https://en.wikipedia.org/wiki/OpenSSH">OpenSSH</a> - current stable is v7.6</li>
+</ul>
+<p>We'll be using OpenSSH exclusively in this demo as that's the standard for most OS's you'll see in the wild.</p></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>securing sshd</h2>
+      <h3>prerequisites</h3>
+    </hgroup>
+    <article ></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>securing sshd</h2>
+      <h3>/etc/ssh/sshd_config</h3>
+    </hgroup>
+    <article ><p><em><em>important if you are exposing sshd to the interwebs</em></em></p></article>
+ 
+</slide>
+
+
+<slide class="thank-you-slide segue nobackground">
+  <!-- <aside class="gdbar right"><img src="images/google_developers_icon_128.png"></aside> -->
+  <article class="flexbox vleft auto-fadein">
+    <h2> Thanks everyone!</h2>
+    <p> Special thanks to:</p>
+  </article>
+  <p data-config-contact class="auto-fadein"> <a href="http://www.barracudanetworks.com/">Barracuda Networks</a><br/> <a href="https://rootaccess.space">Root Access</a></p>
+  </p>
+</slide>
+
+<slide class="backdrop"></slide>
+
+</slides>
+
+<script>
+var _gaq = _gaq || [];
+_gaq.push(['_setAccount', 'UA-XXXXXXXX-1']);
+_gaq.push(['_trackPageview']);
+
+(function() {
+  var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+  ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+  var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+})();
+</script>
+
+<!--[if IE]>
+  <script src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js"></script>
+  <script>CFInstall.check({mode: 'overlay'});</script>
+<![endif]-->
+</body>
+</html>
